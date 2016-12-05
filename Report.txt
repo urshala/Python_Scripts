@@ -1,0 +1,77 @@
+Project Name: A Simple database in Python using excel sheet 
+Group members: Ganga Dhawaj Lingden, Pasang Nuru Sherpa, Deepak Panta
+
+
+IMPORTANT !!! openpyxl module is required for this program to function properly
+
+
+1. General description of database 
+	What is database? 
+	What are the actions performed in database? (Insert, update, delete.....)
+	Popular database examples?
+
+2. Problem Analysis
+	Database needs to save some items in disc or some non-volatile storage so that the data are available even after the system turns off. Since data have to be saved in some way we chose simple Excel files to store our data. Since Python is based on DRY (Don't Repeat Yourself) philosophy we used existing library to work with excel files called openpyxl. 
+	Before any data can be saved there should be excel file(in our case here) already existing or should be created. So we checked if there already exists the file with the given name or not. Since all the database needs to have columns they have to be explicitly named while creating a database/excel file.
+	Database are for saving data so there should be a way to save the data in a correct format. This writing data into the excel file is solved by assigning value to each cell of the excel file. Each cell in excel file can be denotated by [Row:Column] value such as A1 or D4 which means first row first column and fourth row, 4th column respectively. Saving data can is done accessing designated cell and assigning it the required value.
+
+	Database should allow to update the data. This can be done in a similar way of writing into database. We access the required cell and assign the new item to it. Deleting is done exactly same way.
+
+	Database should allow to search items in the database file. Since excel file have columns we decided to allow users to have search feature with field value. For searching function we get the input from user and compare it with the data saved in database. If input is equal to the record in database the record is printed for user.
+
+
+	In a proper database system, user should be able to view all the database names. This problem is solved by finding all the excel files and printing them for user. Similarly user should be able to see what column are available in certain database so that he knows how many data values to enter to save the data. This is solved by accessing the headers of excel file.
+
+	Similary user should be albe to view all the data that are in a database. For this we need to iterate over all the records in excel file . This was solved by using the for loop to access each cell value and concatinating with rest of data and printing in the console.
+
+	3. The structure of Solution
+		We decided to use functions instead of class for this purpose. We have following functions to solve our problem:
+
+		a. _db_exists(db_name) --returns True if db_name exists
+		b. create_db(db_name, list_of_headers) -- Creates excel file with headers from list_of_headers
+		c. insert_into_db(db_name, list_of_value) --Insert new record into database
+		d. delete_from_db(db_name, value, field) -- Deletes record that matches 
+		e. update_from_db(db_name, old_data, data_to_be_updated_with) -- Updates the old data with new data
+		f. search_db(db_name, search_keyword, field) -- Returns the matched record , allows lookup field
+		g. show_db() -- prints all the databases/Excel files 
+		h. show_tables(db_name) -- Prints all the headers of an database/Excel file
+		i. show_all_data(db_name) -- Prints out all the records in given database
+
+
+	4.Detailed descriptions of functions
+
+		a. def _db_exists(db_name)
+			Before we create any database/Excel file we need to make sure that the file doesn't exist. This function returns True if the file exists, False otherwise.
+
+		b. def create_db(db_name, list_of_headers)
+			First we append the extension to given database and check to see if the database already exists or not. It raises exception if the database already exits. Otherwise it opens the excel workbook and gets the active sheet that we need to work on. Then we validate that list_of_headers that user pass is in list format and check that it matches the correct length format. ie. User can't give 5 data items to database that has 4 headers. 
+			If no exceptions are raised it iterates through each row and column and assign each value that is passed as list. Since we need one item at a time, we decided to use generators that yields each item from list_of_headers at a time.
+
+			Finally the data is saved and user is notified via a print statement.
+
+		c. def delete_from_db(db_name, list_of_value, field=None)
+			First like all functions it checks if the database exists. If not it raises exception. Otherwise, it opens the excel book and gets the active sheet. If user fails to provide look up feild a default first column is provided. Else it checks it the lookup field exists in the headers of excel file. If not it notifies user of it. If it finds the lookup field in excel header, it proceeds to check all the cells to see if the passed parameter matches the record in cell. If it matches, we save the cell's details(ie. row and column value). Then we check to see if there are more than one matches or not. If there are more than one record that matches, we notify user of this and display each match with a number infront of it. So user can choose which reocrd to delete. if user inputs number that are not mentioned it throws an error. Else it deletes the record from database.
+
+			In the background the data is not deleted but None value is assigned to cell. This is hidden from user all the time. However, openpyxl didn't have any builtin fuction to implement deleting the entire row operation. 
+
+		d. def update_from_db(db_name, old_data, data_to_be_updated_with)
+			First it checks to see if the database exists. If it exists it opens the excel sheet for updating. For this function we split the old_data and new data that should replace the old data into lists and see if the lengths of these are equal to the number of columns in the database/Excel file. It throws an exception if the data length is not of correct format.
+			If all the data passes the length checking step we iterate over each record and produce a string for each record and compare it against old_data, if it matches we replace the old_data with the new data. However if there are more than one matches we update the last record. 
+			The user is then notified via a print statement.
+
+		e. def search_db(db_name, search_keyword, field)
+			This function checks if the passed database exists or not. If it exists, this opens excel sheet and see if the lookup field exits in the excel headers or not. If not it notifies via a print statement otherwise it iterates over all the records and check against the column that matches. The match data is appended in a list. Then we used for loop with enumeration to iterate over matched columns and concatenate its value with a string and print it with nice numbering.
+
+		f.def show_db()
+			This function loops through all the files in the current location and checks if the file ends with .xlsx extension or not. Since we decided to use excel file as our backend/database, all our database names should end with .xlsx extension. We append the result into a list and iterate over it to print in console. If the list is empty user is notified with print statement telling that no database are available.
+
+		g. def show_tables(db_name):
+			In a database ther are tables/headers which specify the individual record's item. For example it could be First Name or Age or Phone number. Since we used excel file as a database. The first row is our table.
+			Each column thus is a header or table. 
+			For this we open the excel sheet and iterate over first row only and get the each cell's value, concatenate it and print it.
+
+		h. def show_all_db(db_name):
+			For this function we first check if database exists or not as usual. If there is database we need to know how much columns and rows to iterate over. So we figure out the number of columns and rows using built-in method of openpyxl. So we iterate from the second row, since first row is headers, for all columns and concetenate all the cell value with an empty string. There might be other data except string such as integer or float in excel file so we cast everything to string and finally print it in console one record per line.
+
+
+

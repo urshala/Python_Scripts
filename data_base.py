@@ -7,6 +7,7 @@ import os
 
 def _db_exists(db_name):
 	'''Returns true if the given excel file exists '''
+	#checks if file exists or not
 	if os.path.exists(db_name):
 		return True 
 	return False
@@ -14,9 +15,11 @@ def _db_exists(db_name):
 
 def create_db(db_name, list_ot_headers):
 	''' Creates the excel sheet and with the given parameters as headers of excel
-	file '''
+	file 
+	Usage; create_db('Database_Name', ['Header1', 'Header2', 'Header3']) '''
 
 
+	#yield each item of header at a time
 	def insert_value():
 		for item in list_ot_headers:
 			yield item
@@ -32,7 +35,7 @@ def create_db(db_name, list_ot_headers):
 	active_sheet = excel_file.active
 	number_of_columns = len(list_ot_headers)
 	for index in range(1, number_of_columns + 1):
-		active_sheet.cell(row=1, column=index).value = next(table_generator)
+		active_sheet.cell(row=1, column=index).value = next(table_generator) #use of generator
 
 	excel_file.save(db_name)
 	print 'Database {} created successfully'.format(db_name)
@@ -41,7 +44,8 @@ def create_db(db_name, list_ot_headers):
 
 
 def insert_into_db(db_name, list_of_value):
-	''' Saves the given list of values into excel sheet '''
+	''' Saves the given list of values into excel sheet 
+	Usage; insert_into_db('Database_Name', ['Value1', 'Value2', 'Value3']) '''
 	db = db_name
 	db_name = db_name + '.xlsx'
 	if not _db_exists(db_name):
@@ -51,8 +55,9 @@ def insert_into_db(db_name, list_of_value):
 	column = active_sheet.max_column
 	if not isinstance(list_of_value, list):
 		raise Exception('Enter the data to be inserted as a list')
-	my_gen = (item for item in list_of_value)
+	my_gen = (item for item in list_of_value) #generator to yield each value to be inserted at a time
 
+	#see if the data length corresponds to number of columns or not
 	if len(list_of_value) % column != 0:
 		raise Exception('Make sure the data has correct length')
 
@@ -69,9 +74,9 @@ def insert_into_db(db_name, list_of_value):
 
 
 
-def delete_from_db(db_name, list_of_value, field='first_column'):
+def delete_from_db(db_name, list_of_value, field=None):
 	''' Deletes the record with matching value and field 
-		E.g. delete_from_db('MyDB', 'first_name', 'First Name' '''
+		Usage: delete_from_db('Database_Name', 'first_name', 'First Name' '''
 	db = db_name
 	db_name = db_name + '.xlsx'
 
@@ -81,10 +86,15 @@ def delete_from_db(db_name, list_of_value, field='first_column'):
 	wb = openpyxl.load_workbook(db_name)
 	active_sheet = wb.active
 	headers = show_tables(db_name)
+
+	#if no field is given make one default
+	if not field:
+		field = active_sheet.cell(row=1,column=1).value
 	if field in headers:
 		column_value = headers.index(field) + 1 
 		row, col = active_sheet.max_row, active_sheet.max_column
 		match_results = []
+		#get the matching cells and append it to list
 		for i in range(1,row+1):
 			if active_sheet.cell(row=i, column=column_value).value == list_of_value:
 				match_results.append((i,column_value))
@@ -93,6 +103,8 @@ def delete_from_db(db_name, list_of_value, field='first_column'):
 			Press the required number. '''
 			col_into_letter = '{}'.format(openpyxl.utils.get_column_letter(col))
 			match_column_slice = ''
+
+			#Enumerate match_reslts and concetenate each cell's value and print it
 			for index,i in enumerate(match_results, start=1):
 				s = ''
 				match_column_slice = 'A{}:{}{}'.format(i[0], col_into_letter, i[0] )
@@ -101,6 +113,8 @@ def delete_from_db(db_name, list_of_value, field='first_column'):
 						s = s + ' ' + str(item.value)
 				print '{}. {}'.format(index, s)
 
+
+			#See that input is valid
 			try:
 				prm = input('Enter the number to delete item >')
 				if not 1 <= prm <= len(match_results):
@@ -108,6 +122,7 @@ def delete_from_db(db_name, list_of_value, field='first_column'):
 			except (NameError, TypeError):
 				raise Exception('Enter a valid number')
 
+			#delete the value, assign None
 			list_index_to_delete = match_results[prm - 1 ]
 			column_slice_to_delete = list_index_to_delete[0]
 			slice_val = 'A{0}:{1}{0}'. format(column_slice_to_delete, col_into_letter)
@@ -118,6 +133,7 @@ def delete_from_db(db_name, list_of_value, field='first_column'):
 
 		elif len(match_results) == 1:			
 			print 'Found one match'
+			col_into_letter = '{}'.format(openpyxl.utils.get_column_letter(col))
 			for i in match_results:
 				match_column_slice = 'A{0}:{1}{0}'.format(i[0], col_into_letter)
 				for match in active_sheet[match_column_slice]:
@@ -135,7 +151,9 @@ def delete_from_db(db_name, list_of_value, field='first_column'):
 
 
 def update_from_db(db_name, old_data, data_to_be_updated):
-	''' Updates the last matching item '''
+	''' Updates the last matching item 
+		Usage; update_from_db('Database_Name','This, is, old, data', 'This, is new, data')
+	'''
 	db = db_name
 	db_name = db_name + '.xlsx'
 	if not _db_exists(db_name):
@@ -146,7 +164,7 @@ def update_from_db(db_name, old_data, data_to_be_updated):
 	active_sheet = wb.active
 	row, col = active_sheet.max_row, active_sheet.max_column
 	old_data = old_data.split(',')
-	od = ' '.join(old_data)
+	od = ''.join(old_data)
 	print 'The od is ', od
 	col_into_letter = '{}'.format(openpyxl.utils.get_column_letter(col))
 	
@@ -163,7 +181,7 @@ def update_from_db(db_name, old_data, data_to_be_updated):
 			val = active_sheet.cell(row=r, column=c).value
 			if val is None:
 				continue
-			s = s + ' ' + active_sheet.cell(row=r, column=c).value
+			s = s + ' ' + str(active_sheet.cell(row=r, column=c).value)
 		
 		if s.strip() == od.strip():
 			match_slice = 'A{0}:{1}{0}'.format(r,col_into_letter)
@@ -179,6 +197,10 @@ def update_from_db(db_name, old_data, data_to_be_updated):
 
 
 def search_data(db_name, search_keywords, field):
+	''' Searches the given databse with the key word an look up field
+		Usage: search_data('Database_name', 'someword', 'Look_Up_Field')
+		E.g. search_data('Database_School', 'Jhon', 'First Name')
+	'''
 	db = db_name
 	db_name = db_name + '.xlsx'
 	if not _db_exists(db_name):
@@ -205,8 +227,11 @@ def search_data(db_name, search_keywords, field):
 				for item in match:
 					s = s + ' ' + item.value
 			print '{}. {}'.format(index, s)
+	else:
+		print '"{}" is not a valid field in this database'.format(field)
 
 def show_db():
+	'''Lists out all the database available '''
 	data_bases = []
 	for files in os.listdir('.'):
 		if files.endswith('xlsx'):
@@ -223,6 +248,7 @@ def show_db():
 
 
 def show_tables(db_name):
+	''' Lists out all the columns of the database '''
 	if not db_name.endswith('.xlsx'):
 		db_name = db_name + '.xlsx'
 	else:
@@ -245,6 +271,7 @@ def show_tables(db_name):
 	return headers
 
 def show_all_data(db_name):
+	''' Lists all the data/record from a database '''
 	db = db_name
 	db_name = db_name + '.xlsx'
 	if not _db_exists(db_name):
@@ -259,7 +286,7 @@ def show_all_data(db_name):
 			record = sheet.cell(row=r, column=c).value
 			if record is None:
 				continue
-			result = result + ' ' + record
+			result = result + ' ' + str(record)
 		if result:
 			print result,
 			print 
@@ -270,10 +297,3 @@ if '__name__' == '__main__':
 	main()
 
 
-
-#search_data('Myfile.xlsx', 'Jenga', 'First Name')
-#delete_from_db('Myfile.xlsx', 'Jenga', 'First Name')
-#show_tables('Myfile.xlsx')
-#create_db('Myfile', ['First Name', 'Last Name', 'Age', 'Score'])
-#insert_into_db('Myfile.xlsx', ['deepak', 'am', 'Yo-kyla', 'ED', 'Jenga', 'Koila', 12,'deepak'])
-#show_db()
