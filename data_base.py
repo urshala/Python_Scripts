@@ -1,34 +1,54 @@
 import openpyxl
 import os
 
+
+
+
+
+def _db_exists(db_name):
+	'''Returns true if the given excel file exists '''
+	if os.path.exists(db_name):
+		return True 
+	return False
+
+
 def create_db(db_name, list_ot_headers):
-	''' Creates the excel sheet and gives the values '''
+	''' Creates the excel sheet and with the given parameters as headers of excel
+	file '''
+
 
 	def insert_value():
 		for item in list_ot_headers:
 			yield item
 	table_generator = insert_value()
 	
+	db_name = db_name + '.xlsx'
+	if _db_exists(db_name):
+		raise Exception('The database with that name already exits!')
+
 	excel_file = openpyxl.Workbook()
 	active_sheet = excel_file.active
 	number_of_columns = len(list_ot_headers)
 	for index in range(1, number_of_columns + 1):
 		active_sheet.cell(row=1, column=index).value = next(table_generator)
 
-	excel_file.save(db_name +'.xlsx')
+	excel_file.save(db_name)
 	print 'Database {} created successfully'.format(db_name)
 
 	
 
 
 def insert_into_db(db_name, list_of_value):
+	''' Saves the given list of values into excel sheet '''
+	db = db_name
+	db_name = db_name + '.xlsx'
+	if not _db_exists(db_name):
+		raise Exception('Database with name "{}" does not exist'.format(db))
 	wb = openpyxl.load_workbook(db_name)
 	active_sheet = wb.active
 	column = active_sheet.max_column
-
-	# def data_generator():
-	# 	for item in list_of_value:
-	# 		yield item
+	if not isinstance(list_of_value, list):
+		raise Exception('Enter the data to be inserted as a list')
 	my_gen = (item for item in list_of_value)
 
 	if len(list_of_value) % column != 0:
@@ -48,6 +68,14 @@ def insert_into_db(db_name, list_of_value):
 
 
 def delete_from_db(db_name, list_of_value, field='first_column'):
+	''' Deletes the record with matching value and field 
+		E.g. delete_from_db('MyDB', 'first_name', 'First Name' '''
+	db = db_name
+	db_name = db_name + '.xlsx'
+
+	if not _db_exists(db_name):
+		raise Exception('Database with name "{}" does not exist'.format(db))
+
 	wb = openpyxl.load_workbook(db_name)
 	active_sheet = wb.active
 	headers = show_tables(db_name)
@@ -86,28 +114,39 @@ def delete_from_db(db_name, list_of_value, field='first_column'):
 					i.value = None
 			print 'Successfully deleted !!'
 
-		else:			
+		elif len(match_results) == 1:			
 			print 'Found one match'
 			for i in match_results:
 				match_column_slice = 'A{0}:{1}{0}'.format(i[0], col_into_letter)
 				for match in active_sheet[match_column_slice]:
 					for each_tup in match:
 						each_tup.value = None			
-			print 'Deleted value'			
+			print 'Deleted value'	
+		else:
+			print '"{}" does not match any record '.format(list_of_value)		
 
 	else:
-		print 'No match found!'
+		print '"{}" is not a valid column name'.format(field)
 
 	wb.save(db_name)
 
 
 
 def update_from_db(db_name, old_data, data_to_be_updated):
+	''' Updates the last matching item '''
+	db = db_name
+	db_name = db_name + '.xlsx'
+	if not _db_exists(db_name):
+		raise Exception('Database with name "{}" does not exist'.format(db))
+ 
+
 	wb = openpyxl.load_workbook(db_name)
 	active_sheet = wb.active
 	row, col = active_sheet.max_row, active_sheet.max_column
 	old_data = old_data.split(',')
-	od = ''.join(old_data)
+	od = ' '.join(old_data)
+	print 'The od is ', od
+	col_into_letter = '{}'.format(openpyxl.utils.get_column_letter(col))
 	
 	new_data = data_to_be_updated.split(',')
 	
@@ -125,8 +164,8 @@ def update_from_db(db_name, old_data, data_to_be_updated):
 			s = s + ' ' + active_sheet.cell(row=r, column=c).value
 		
 		if s.strip() == od.strip():
-			match_slice = 'A{0}:D{0}'.format(r)
-
+			match_slice = 'A{0}:{1}{0}'.format(r,col_into_letter)
+			
 	for item in active_sheet[match_slice]:
 		for each_tup in item:
 			each_tup.value = next(replace_new_data)
@@ -135,9 +174,14 @@ def update_from_db(db_name, old_data, data_to_be_updated):
 			
 	wb.save(db_name)
 
-update_from_db('Myfile.xlsx', 'deepak, am, Yo-kyla, ED', 'deepakPanta, PM, Finland, Oh.yah')
+
 
 def search_data(db_name, search_keywords, field):
+	db = db_name
+	db_name = db_name + '.xlsx'
+	if not _db_exists(db_name):
+		raise Exception('Database with name "{}" does not exist'.format(db))
+
 	wb = openpyxl.load_workbook(db_name)
 	active_sheet = wb.active
 	headers = show_tables(db_name)
@@ -171,13 +215,20 @@ def show_db():
 		for item in data_bases:
 			print item
 	else:
-		print 'Found no database with that name.'
+		print 'Found no database'
 	
 
-def sort_db_content(db_name, field):
-	pass
+
 
 def show_tables(db_name):
+	if not db_name.endswith('.xlsx'):
+		db_name = db_name + '.xlsx'
+	else:
+		db_name = db_name
+
+	db = db_name
+	if not _db_exists(db_name):
+		raise Exception('Database with name "{}" does not exist'.format(db))
 	wb = openpyxl.load_workbook(db_name)
 	sheet = wb.active
 	number_of_columns = sheet.max_column
@@ -188,9 +239,33 @@ def show_tables(db_name):
 		#print '{}. {}'.format(i,column_head)
 		headers.append(column_head)
 	
+
 	return headers
 
+def show_all_data(db_name):
+	db = db_name
+	db_name = db_name + '.xlsx'
+	if not _db_exists(db_name):
+		raise Exception('Database with name "{}" does not exist'.format(db))
+	wb = openpyxl.load_workbook(db_name)
+	sheet = wb.active
+	row, col = sheet.max_row, sheet.max_column
 
+	for r in range(2, row +1):
+		result = ''
+		for c in range(1,col +1):
+			record = sheet.cell(row=r, column=c).value
+			if record is None:
+				continue
+			result = result + ' ' + record
+		if result:
+			print result,
+			print 
+
+
+
+if '__name__' == '__main__':
+	main()
 
 
 
