@@ -25,6 +25,8 @@ def create_db(db_name, list_ot_headers):
 	db_name = db_name + '.xlsx'
 	if _db_exists(db_name):
 		raise Exception('The database with that name already exits!')
+	if not isinstance(list_ot_headers, list):
+		raise Exception(' Make sure that the headers is in list format')
 
 	excel_file = openpyxl.Workbook()
 	active_sheet = excel_file.active
@@ -96,7 +98,7 @@ def delete_from_db(db_name, list_of_value, field='first_column'):
 				match_column_slice = 'A{}:{}{}'.format(i[0], col_into_letter, i[0] )
 				for match in active_sheet[match_column_slice]:
 					for item in match:
-						s = s + ' ' + item.value
+						s = s + ' ' + str(item.value)
 				print '{}. {}'.format(index, s)
 
 			try:
